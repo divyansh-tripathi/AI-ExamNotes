@@ -5,14 +5,17 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { AnimatePresence, motion } from "motion/react";
 import { RxHamburgerMenu } from "react-icons/rx";
+import FinalResult from "../components/FinalResult";
 
 const History = () => {
   const [topics, setTopics] = useState([]);
   const navigate = useNavigate();
   const userData = useSelector((state) => state.user?.userData);
   const credits = userData?.credits ?? 0;
-
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [selectedNote, setSelectedNote] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [activeNodeId, setActiveNodeId] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   useEffect(() => {
     const myNotes = async () => {
       try {
@@ -26,6 +29,27 @@ const History = () => {
       }
     };
     myNotes();
+  }, []);
+
+  const openNotes = async (noteId) => {
+    setLoading(true);
+    setActiveNodeId(noteId);
+    try {
+      const res = await axios.get(serverUrl + `/api/notes/${noteId}`, {
+        withCredentials: true,
+      });
+      setSelectedNote(res.data.content);
+      setLoading(false);
+    } catch (error) {
+      console.log(error);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (window.innerWidth >= 1024) {
+      setIsSidebarOpen(true);
+    }
   }, []);
 
   return (
@@ -58,6 +82,15 @@ const History = () => {
         </div>
 
         <div className="flex items-center gap-5 flex-wrap">
+          {!isSidebarOpen && (
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden text-white text-2xl"
+            >
+              <RxHamburgerMenu />
+            </button>
+          )}
+
           <button
             onClick={() => navigate("/pricing")}
             className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white text-sm"
@@ -73,21 +106,18 @@ const History = () => {
               ➕
             </motion.span>
           </button>
-          <button className="lg:hidden text-white text-2xl">
-            <RxHamburgerMenu />
-          </button>
         </div>
       </motion.header>
 
       <div className=" grid grid-cols-1 lg:grid-cols-4 gap-6 ">
         <AnimatePresence>
-          {(isSidebarOpen || window.innerHTML >= 1024) && (
+          {isSidebarOpen && (
             <motion.div
               initial={{ x: -320 }}
               animate={{ x: 0 }}
               exit={{ x: -320 }}
               transition={{ type: "string", stiffness: 260, damping: 30 }}
-              className="
+              className=" 
 fixed lg:static
 top-0 left-0 z-50 lg:z-auto
 w-72 lg:w-auto
@@ -108,9 +138,92 @@ overflow-y-auto
               >
                 ⬅️ Back
               </button>
+
+              <div className="mb-4 space-y-1 ">
+                <button
+                  onClick={() => {
+                    navigate("/notes");
+                  }}
+                  className=" text-start w-full px-3 py-2 rounded-lg text-sm text-gray-200 bg-white/10 hover:bg-white/20"
+                >
+                  ➕ New Notes
+                </button>
+                <hr className="border-white/10 mb-4" />
+                <h2 className="mb-4 text-lg font-bold bg-gradient-to-r from-white via-gray-300 to-white bg-clip-text text-transparent">
+                  Your Notes
+                </h2>
+                {topics.length === 0 && (
+                  <p
+                    className="text-sm
+  text-gray-400 "
+                  >
+                    No notes created yet
+                  </p>
+                )}
+
+                <ul className="space-y-3 h-screen overflow-auto">
+                  {topics.map((t, i) => (
+                    <li
+                      key={i}
+                      onClick={() => {
+                        openNotes(t._id);
+                      }}
+                      className={`cursor-pointer rounded-xl p-3 border transition-all ${
+                        activeNodeId === t._id
+                          ? "bg-indigo-500/50 border-indigo-400 shadow-[0_0_0_1px_rgba(99,102,241,0.6)]"
+                          : "bg-white/5 border-white/10 hover:bg-white/10"
+                      }`}
+
+                      
+                    >
+                      <p className="text-sm font-semibold text-white">
+                        {t.topic}
+                      </p>
+
+                      <div className="flex flex-wrap gap-2 mt-2 text-xs">
+                        {t.classLevel && (
+                          <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300">
+                            ClassLevel : {t.classLevel}
+                          </span>
+                        )}
+
+                        {t.examType && (
+                          <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300">
+                            ExamType : {t.examType}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex gap-3 mt-2 text-sm text-gray-300">
+                        {t.revisionMode && <span> ⚡ Revision </span>}
+                        {t.includeDiagram && <span> 📊 Diagram </span>}
+                        {t.includeChart && <span> 📈 Chart </span>}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
+
+        <motion.div
+          initial={{ opacity: 0, y: -15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="lg:col-span-3 rounded-2xl bg-white shadow-[0_15px_40px_rgba(0,0,0,0.15)] p-6 min-h-[75vh]"
+        >
+          {loading && (
+            <p className="text-center text-gray-500 "> Loading notes...</p>
+          )}
+          {!loading && !selectedNote && (
+            <div className="h-full flex items-center justify-center text-gray-400">
+              Select a topic from the sidebar
+            </div>
+          )}
+
+          {!loading && selectedNote && <FinalResult result={selectedNote} />}
+        </motion.div>
       </div>
     </div>
   );

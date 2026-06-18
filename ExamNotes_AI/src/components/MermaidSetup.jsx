@@ -27,10 +27,29 @@ const cleanMermaidChart = (diagram) => {
 };
 
 const autoFixNodes = (diagram) => {
+  if (/[A-Za-z0-9_]+\[.*?\]/.test(diagram)) {
+    return diagram;
+  }
+
   let index = 0;
+  const used = new Map();
+
   return diagram.replace(/\[(.*?)\]/g, (_, label) => {
-    index++;
-    return `N${index}[${label}]`;
+    const key = label.trim();
+
+    if (!used.has(key)) {
+      used.set(key, `N${++index}`);
+    }
+
+    return `${used.get(key)}["${key}"]`;
+  });
+};
+
+const sanitizeMermaidLabels = (diagram) => {
+  return diagram.replace(/([A-Za-z0-9_]+)\[(.*?)\]/g, (_, id, label) => {
+    const safe = label.replace(/"/g, "&quot;").replace(/\n/g, " ");
+
+    return `${id}["${safe}"]`;
   });
 };
 
@@ -45,16 +64,15 @@ const MermaidSetup = ({ diagram }) => {
 
         const uniqueId = `mermaid-${Math.random().toString(36).substring(2, 9)}`;
 
-        const safeChart = autoFixNodes(cleanMermaidChart(diagram));
+        const safeChart = sanitizeMermaidLabels(
+          autoFixNodes(cleanMermaidChart(diagram)),
+        );
 
-        // const { svg } = await mermaid.render(uniqueId, safeChart);
-
-        const { svg } = await mermaid.render(uniqueId, diagram);
+        const { svg } = await mermaid.render(uniqueId, safeChart);
 
         containerRef.current.innerHTML = svg;
       } catch (error) {
         console.error("Mermaid render failed:", error);
-        console.log("Diagram:", safeChart);
       }
     };
 
