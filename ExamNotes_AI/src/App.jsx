@@ -10,7 +10,7 @@ import Pricing from "./pages/Pricing";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailed from "./pages/PaymentFailed";
 
-export const serverUrl = "http://localhost:8000";
+export const serverUrl = "https://ai-examnotesserver.onrender.com";
 
 const App = () => {
   const dispatch = useDispatch();
