@@ -19,7 +19,7 @@ app.post(
 )
 app.use(
   cors({
-    origin: "https://ai-examnotesclient.onrender.com",
+    origin: "https://ai-examnotesclient.onrender.com"|| "http://localhost:5173",
     credentials: true,
     methods: ["GET", "PUT", "DELETE", "POST", "OPTIONS"],
   }),
