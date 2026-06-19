@@ -1,4 +1,3 @@
-import { path } from "pdfkit";
 import UserModel from "../models/user.model.js";
 import { getToken } from "../utils/token.js";
 
